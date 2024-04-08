@@ -5,7 +5,7 @@ A minimal fifo circular buffer library for embedded systems [limited to 255 arra
 
 
 Example use:
-
+```c
 #include<buffers.h>
 
 volatile Buffer b; // buffer object
@@ -43,6 +43,5 @@ int main(){
 	nDeq(&nDataOut,&b,2); // reads only 2 elemetns -> nDataOut = [4,5,3];
 	
 }
-
-
+```
 
