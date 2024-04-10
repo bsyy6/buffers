@@ -19,6 +19,10 @@ uint16_t dataOut;  // holder for bytes I will later read from buffer
 enq(&dataIn,&b)  // add element to object
 deq(&dataOut,&b) // read from buffer and store it in data out
 ```
+> defualt behaviour `BLOCK_WHEN_FULL` is set to 1, set it to zero in `buffers.h` if you want it to work as a fifo and overwrite old data when full.
+## why should you use this ?
+1) it is fun.
+2) it is efficeint in using memory.
 
 ## Examples:
 ### Single Data writes
@@ -74,7 +78,7 @@ int main(){
 
 ## Buffer structure
 
-The `Buffer` structure represents a circular buffer. It contains the following fields:
+The `Buffer` structure represents a standard circular buffer. It contains the following fields:
 
 - `void *array`: This is a pointer to the array that is used as the buffer.
 - `uint8_t elementSize`: This field represents the size (in bytes) of each element in the buffer.
@@ -101,3 +105,5 @@ The `Buffer` structure represents a circular buffer. It contains the following f
 - `void reset(volatile Buffer *buffer)`: Resets the buffer, clearing all data.
 
 - `uint8_t howMuchData(volatile Buffer *buffer)`: Returns the amount of data currently stored in the buffer.
+## Author
+Created by: Waleed Alghilan, Apr-2024 (Artificial Hands Area in Scuola Superiore Sant'Anna)
