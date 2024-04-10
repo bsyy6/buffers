@@ -1,6 +1,7 @@
 # Buffers
-
-
+<p align="center">
+  <img src="https://hackaday.com/wp-content/uploads/2015/10/buffer_anim.gif" alt="A circular Buffer example"/>
+</p>
 A minimal fifo circular buffer library for embedded systems [limited to 255 array size]. You should:
 1) initialize a normal array.
 ```c
