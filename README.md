@@ -2,6 +2,8 @@
 
 <p align="center">
   <img src="https://hackaday.com/wp-content/uploads/2015/10/buffer_anim.gif" alt="A circular Buffer example"/>
+<br>
+  <a href = "https://hackaday.com/2015/10/29/embed-with-elliot-going-round-with-circular-buffers">photo source</a>
 </p>
 
 A minimal fifo circular buffer library for embedded systems [limited to 255 array size]. You should:
