@@ -15,6 +15,13 @@ volatile Buffer initBuffer(void *data, uint8_t elementSize, uint8_t arraySize) {
 
 void enq(void *data, volatile Buffer *buffer) {
     buffer->isFull |= ((buffer->tail == buffer->head) && !buffer->isEmpty);
+    
+    if(buffer->Blocked && buffer->tempTail == buffer->head){
+        // option to block the buffer temporarily at position tempTail
+        buffer->isFull = true;
+        return;
+    }
+
     if(BLOCK_WHEN_FULL &&  buffer->isFull){
         // doesn't add anymore
         return;
@@ -34,7 +41,9 @@ void deq(void *data, volatile Buffer *buffer) {
     
     memcpy(data, (uint8_t *)buffer->array + buffer->elementSize * buffer->tail, buffer->elementSize);
     buffer->tail = (buffer->tail + 1) % buffer->arraySize;
-    buffer->isFull = false;
+    if(buffer->isFull && !BLOCK_WHEN_FULL){
+        buffer->isFull = false;
+    }
     buffer->isEmpty = buffer->head == buffer->tail;
     return;
 }
@@ -80,3 +89,11 @@ uint8_t howMuchData(volatile Buffer *buffer) {
     return buffer->arraySize - buffer->tail + buffer->head;
 }
 
+void blockBuffer(volatile Buffer *buffer){
+    buffer->Blocked = true;
+    buffer->tempTail = buffer->tail;
+}
+
+void unblockBuffer(volatile Buffer *buffer){
+    buffer->Blocked = false;
+}
