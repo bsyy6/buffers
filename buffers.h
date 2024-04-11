@@ -16,7 +16,8 @@ typedef struct {
     uint8_t head;  // write index
     uint8_t tail;  // read  index
     bool isEmpty;  // there is nothing inside
-    bool isFull;   // it went to overflow at some point (lost data)
+    bool isFull;  // there is no space left if you write before reading it sets the dataLoss flag
+    bool dataLoss;   // it went to overflow at some point (lost data)
     bool Blocked; // Temporary tail. Used to block the buffer while handling data in other programs.
     uint8_t bookmarkIdx; // Temporary tail. Used to block the buffer while handling data in other programs.
     uint8_t whatIsLife;
@@ -28,6 +29,7 @@ void deq(void *data, volatile Buffer *buffer);
 void setBookmark(volatile Buffer *buffer);
 void removeBookmark(volatile Buffer *buffer);
 bool findNextBookmark(volatile Buffer *buffer);
+void rewindToBookmark(volatile Buffer *buffer);
 bool findFlag(volatile Buffer *buffer, void *data);
 void nEnq(void *data, volatile Buffer *buffer, uint8_t size);
 void nDeq(void *data, volatile Buffer *buffer, uint8_t size);
