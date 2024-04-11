@@ -7,7 +7,7 @@ volatile Buffer initBuffer(void *data, uint8_t elementSize, uint8_t arraySize) {
         .arraySize = arraySize,
         .head = 0,
         .tail = 0,
-        .tempTail = 0,
+        .bookmarkIdx = 0,
         .isEmpty = true,
         .isFull = false,
         .Blocked = false,
@@ -18,8 +18,8 @@ volatile Buffer initBuffer(void *data, uint8_t elementSize, uint8_t arraySize) {
 void enq(void *data, volatile Buffer *buffer) {
     buffer->isFull |= ((buffer->tail == buffer->head) && !buffer->isEmpty);
     
-    if(buffer->Blocked && buffer->tempTail == buffer->head){
-        // option to block the buffer temporarily at position tempTail
+    if(buffer->Blocked && buffer->bookmarkIdx == buffer->head){
+        // option to block the buffer temporarily at position bookamrkIdx
         buffer->isFull = true;
         return;
     }
@@ -92,11 +92,40 @@ uint8_t howMuchData(volatile Buffer *buffer) {
     return buffer->arraySize - buffer->tail + buffer->head;
 }
 
-void blockBuffer(volatile Buffer *buffer){
+void setBookmark(volatile Buffer *buffer){
     buffer->Blocked = true;
-    buffer->tempTail = buffer->tail;
+    buffer->bookmarkIdx = buffer->tail;
 }
 
-void unblockBuffer(volatile Buffer *buffer){
+void removeBookmark(volatile Buffer *buffer){
     buffer->Blocked = false;
+}
+
+bool findNextBookmark(volatile Buffer *buffer){
+    if(buffer->Blocked){
+       return(findFlag(buffer, (uint8_t *)buffer->array + buffer->elementSize * buffer->bookmarkIdx));
+    }else{
+        return false;
+    }
+}
+
+bool findFlag(volatile Buffer *buffer, void *data){
+    if(buffer->isEmpty){
+        return false;
+    }
+
+    uint8_t i = buffer->tail; // where to start searching
+    
+    if(buffer->Blocked){
+        i = (buffer->bookmarkIdx+1) % buffer->arraySize;
+    }
+
+    for (i ; i != buffer->head; i = (i+1) % buffer->arraySize) {
+        if(memcmp((uint8_t *)buffer->array + buffer->elementSize * i, data, buffer->elementSize) == 0){
+        buffer->bookmarkIdx = i;
+        return true;
+        }
+    }
+    // if the data is not found
+    return false;
 }
