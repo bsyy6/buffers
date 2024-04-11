@@ -6,7 +6,7 @@
 #ifndef BUFFERS_H
 #define BUFFERS_H
 
-#define BLOCK_WHEN_FULL 0
+#define BLOCK_WHEN_FULL 1
 
 typedef struct {
     // circular buffer
