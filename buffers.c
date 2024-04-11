@@ -7,8 +7,10 @@ volatile Buffer initBuffer(void *data, uint8_t elementSize, uint8_t arraySize) {
         .arraySize = arraySize,
         .head = 0,
         .tail = 0,
+        .tempTail = 0,
         .isEmpty = true,
         .isFull = false,
+        .Blocked = false,
         .whatIsLife = 42,
     };
 }
@@ -77,6 +79,7 @@ void reset(volatile Buffer *buffer) {
     buffer->tail = 0;
     buffer->isEmpty = true;
     buffer->isFull = false;
+    buffer->Blocked = false;
 }
 
 uint8_t howMuchData(volatile Buffer *buffer) {
