@@ -10,21 +10,16 @@ volatile Buffer initBuffer(void *data, uint8_t elementSize, uint8_t arraySize) {
         .bookmarkIdx = 0,
         .isEmpty = true,
         .isFull = false,
+        .dataLoss = false,
         .Blocked = false,
         .whatIsLife = 42,
     };
 }
 
 void enq(void *data, volatile Buffer *buffer) {
-    buffer->isFull |= ((buffer->tail == buffer->head) && !buffer->isEmpty);
+    buffer->dataLoss |= buffer->isFull;
     
-    if(buffer->Blocked && buffer->bookmarkIdx == buffer->head){
-        // option to block the buffer temporarily at position bookamrkIdx
-        buffer->isFull = true;
-        return;
-    }
-
-    if(BLOCK_WHEN_FULL &&  buffer->isFull){
+    if(BLOCK_WHEN_FULL &&  buffer->dataLoss){
         // doesn't add anymore
         return;
     }else{
@@ -32,6 +27,9 @@ void enq(void *data, volatile Buffer *buffer) {
         buffer->head = (buffer->head + 1) % buffer->arraySize;
         buffer->isEmpty = false;
         buffer->isFull = buffer->head == buffer->tail;
+        if(buffer->Blocked){
+            buffer->isFull = buffer->head == buffer->bookmarkIdx;
+        }
         return ;
     }
 }
@@ -43,9 +41,7 @@ void deq(void *data, volatile Buffer *buffer) {
     
     memcpy(data, (uint8_t *)buffer->array + buffer->elementSize * buffer->tail, buffer->elementSize);
     buffer->tail = (buffer->tail + 1) % buffer->arraySize;
-    if(buffer->isFull && !BLOCK_WHEN_FULL){
-        buffer->isFull = false;
-    }
+    buffer->isFull = false;
     buffer->isEmpty = buffer->head == buffer->tail;
     return;
 }
@@ -53,7 +49,7 @@ void deq(void *data, volatile Buffer *buffer) {
 void nEnq(void *data, volatile Buffer *buffer, uint8_t size) {
     //check if there is enough space in the buffer
     if(buffer->arraySize - buffer->head + buffer->tail < size){
-        buffer->isFull = true;
+        buffer->dataLoss = true;
         return;
     }else{
         for (uint8_t i = 0; i < size; i++) {
@@ -79,6 +75,7 @@ void reset(volatile Buffer *buffer) {
     buffer->tail = 0;
     buffer->isEmpty = true;
     buffer->isFull = false;
+    buffer->dataLoss = false;
     buffer->Blocked = false;
 }
 
@@ -93,17 +90,22 @@ uint8_t howMuchData(volatile Buffer *buffer) {
 }
 
 void setBookmark(volatile Buffer *buffer){
-    buffer->Blocked = true;
-    buffer->bookmarkIdx = buffer->tail;
+    if(!buffer->Blocked){
+        buffer->Blocked = true;
+        buffer->bookmarkIdx = buffer->tail-1;
+    }
 }
 
 void removeBookmark(volatile Buffer *buffer){
     buffer->Blocked = false;
+    if(buffer->isFull && buffer->isEmpty){
+        buffer->isFull = false; // release the buffer
+    }
 }
 
 bool findNextBookmark(volatile Buffer *buffer){
     if(buffer->Blocked){
-       return(findFlag(buffer, (uint8_t *)buffer->array + buffer->elementSize * buffer->bookmarkIdx));
+    return(findFlag(buffer, (uint8_t *)buffer->array + buffer->elementSize * buffer->bookmarkIdx));
     }else{
         return false;
     }
@@ -111,12 +113,9 @@ bool findNextBookmark(volatile Buffer *buffer){
 
 
 bool findFlag(volatile Buffer *buffer, void *data){
-    if(buffer->isEmpty){
-        return false;
-    }
 
     uint8_t i = buffer->tail; // where to start searching
-    
+
     if(buffer->Blocked){
         i = (buffer->bookmarkIdx+1) % buffer->arraySize;
     }
@@ -159,4 +158,19 @@ void rollback( volatile Buffer *buffer, uint8_t N){
         buffer->head = (buffer->arraySize - N + buffer->head) % buffer->arraySize;
     }
     return;
+}
+
+
+void rewindToBookmark(volatile Buffer *buffer){
+    if(buffer->Blocked){
+        buffer->tail = (buffer->bookmarkIdx + 1) % buffer->arraySize;
+        if(buffer->head == buffer->tail){
+            buffer->isEmpty = true; // no data to read
+            buffer->isFull = true; // no place to write
+            // you should unblock the buffer before being able to use it again
+        }
+        
+    }
+    return;
+    
 }
