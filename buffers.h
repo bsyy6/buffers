@@ -29,9 +29,11 @@ void setBookmark(volatile Buffer *buffer);
 void removeBookmark(volatile Buffer *buffer);
 bool findNextBookmark(volatile Buffer *buffer);
 bool findFlag(volatile Buffer *buffer, void *data);
+void rewindToBookmark(volatile Buffer *buffer);
 void nEnq(void *data, volatile Buffer *buffer, uint8_t size);
 void nDeq(void *data, volatile Buffer *buffer, uint8_t size);
 void reset(volatile Buffer *buffer);
+void rollback(volatile Buffer *buffer, uint8_t size);
 uint8_t howMuchData(volatile Buffer *buffer);
 
 #endif

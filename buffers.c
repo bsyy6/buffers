@@ -109,6 +109,7 @@ bool findNextBookmark(volatile Buffer *buffer){
     }
 }
 
+
 bool findFlag(volatile Buffer *buffer, void *data){
     if(buffer->isEmpty){
         return false;
@@ -128,4 +129,34 @@ bool findFlag(volatile Buffer *buffer, void *data){
     }
     // if the data is not found
     return false;
+}
+
+void rewindToBookmark(volatile Buffer *buffer){
+    if(buffer->Blocked){
+        buffer->tail = (buffer->bookmarkIdx + 1) % buffer->arraySize;
+        if(buffer->head == buffer->tail){
+            buffer->isEmpty = true; // no data to read
+            buffer->isFull = true; // no place to write
+            // you should unblock the buffer before being able to use it again
+        }
+        
+    }
+    return;
+    
+}
+
+void rollback( volatile Buffer *buffer, uint8_t N){
+    // move back the last N elements written incorrectly
+    
+    if (buffer->isEmpty || N == 0) {
+        return;
+    }
+    // moves the head backwards by N elements
+    if(N >= howMuchData(buffer)){
+        buffer->head = buffer->tail;
+        buffer->isEmpty = true;
+    }else{
+        buffer->head = (buffer->arraySize - N + buffer->head) % buffer->arraySize;
+    }
+    return;
 }
