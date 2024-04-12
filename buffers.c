@@ -130,7 +130,7 @@ bool findFlag(volatile Buffer *buffer, void *data){
     return false;
 }
 
-void rewindToBookmark(volatile Buffer *buffer){
+void jumpToBookmark(volatile Buffer *buffer){
     if(buffer->Blocked){
         buffer->tail = (buffer->bookmarkIdx + 1) % buffer->arraySize;
         if(buffer->head == buffer->tail){
