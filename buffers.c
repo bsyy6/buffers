@@ -13,7 +13,6 @@ volatile Buffer initBuffer(void *data, uint8_t arraySize) {
         .isFull = false,
         .dataLoss = false,
         .Blocked = false,
-        .whatIsLife = 42,
     };
 }
 
@@ -27,13 +26,13 @@ void enq(void *data, volatile Buffer *buffer) {
         
         // check that buffer head is not pointing to a blocked range
         for (uint8_t i = 0; i < buffer->msgCount; i++) {
-            if (buffer->head == buffer->blockedRanges[i].start) {
-                if(buffer->blockedRanges[i].restriction > 1){
-                    buffer->head = buffer->blockedRanges[i].end + 1;
+            if (buffer->head == buffer->msgRanges[i].start) {
+                if(buffer->msgRanges[i].restriction > 1){
+                    buffer->head = buffer->msgRanges[i].end + 1;
                 }
                 else
                 {
-                    buffer->blockedRanges[i].restriction = 0; // open for read/write
+                    buffer->msgRanges[i].restriction = 0; // open for read/write
                 }
             }
         }
@@ -56,8 +55,8 @@ void deq(void *data, volatile Buffer *buffer) {
     
     // check that buffer tail is not pointing to a blocked range
     for (uint8_t i = 0; i < buffer->msgCount; i++) {
-        if (buffer->tail == buffer->blockedRanges[i].start && buffer->blockedRanges[i].restriction == 2) {
-            buffer->tail = buffer->blockedRanges[i].end + 1;
+        if (buffer->tail == buffer->msgRanges[i].start && buffer->msgRanges[i].restriction == 2) {
+            buffer->tail = buffer->msgRanges[i].end + 1;
         }
     }
 
@@ -197,6 +196,7 @@ void markMsg(volatile Buffer *buffer){
 void unmarkMsg (volatile Buffer *buffer){
     // Find the blocked range
     buffer->msgRanges[0].restriction = 1;
+    buffer->Blocked = false;
     return;
 }
 

@@ -29,7 +29,8 @@ int main(){
 	deq(&dataOut,&b); // read from buffer and store it in data out
 	markMsg(&b); // block the first element
 	enq(&dataIn,&b);  // add element to object
-	unmarkMsg(&b,0,0); // unblock the first element
+	unmarkMsg(&b); // unblock the first element
+	getMsg(&b,&nDataOut); // get the first element
 	deq(&dataOut,&b); // read from buffer and store it in data out
 	dataIn++;
 	enq(&dataIn,&b);  // add element to object

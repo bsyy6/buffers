@@ -52,5 +52,5 @@ void jumpToMsgStart(volatile Buffer *buffer);   // jump to message start
 bool findFlag(volatile Buffer *buffer, void *data); // find a flag in buffer
 void unmarkMsg(volatile Buffer *buffer); // unblocks from start to end
 void markMsg(volatile Buffer *buffer); // blocks from bookmark to current tail
-void getMsg(volatile Buffer *buffer, uint8_t msgOut); // gets the oldest message found in buffer
+void getMsg(volatile Buffer *buffer, uint8_t* msgOut); // gets the oldest message found in buffer
 #endif
