@@ -24,9 +24,9 @@ typedef struct {
     bool isEmpty;  // there is nothing inside
     bool isFull;  // there is no space left if you write before reading it sets the dataLoss flag
     bool dataLoss;   // it went to overflow at some point (lost data)
-    bool Blocked; // Temporary tail. Used to block the buffer while handling data in other programs.
+    bool Blocked; // Temporary tail.
     
-    uint8_t msgStartIdx; // Temporary tail. Used to block the buffer while handling data in other programs.
+    uint8_t msgStartIdx; // Temporary tail.
     Range msgRanges[3]; 
     uint8_t msgCount; 
 } Buffer;
@@ -52,5 +52,5 @@ void jumpToMsgStart(volatile Buffer *buffer);   // jump to message start
 bool findFlag(volatile Buffer *buffer, void *data); // find a flag in buffer
 void unmarkMsg(volatile Buffer *buffer); // unblocks from start to end
 void markMsg(volatile Buffer *buffer); // blocks from bookmark to current tail
-void getMsg(volatile Buffer *buffer, uint8_t* msgOut); // gets the oldest message found in buffer
+void getMsg(volatile Buffer *buffer, uint8_t* msgOut, uint8_t* msgSize); // gets the oldest message found in buffer
 #endif

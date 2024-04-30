@@ -152,14 +152,13 @@ bool findFlag(volatile Buffer *buffer, void *data){
 }
 
 void jumpToMsgStart(volatile Buffer *buffer){
+    
     if(buffer->Blocked){
         buffer->tail = (buffer->msgStartIdx + 1) % buffer->arraySize;
         if(buffer->head == buffer->tail){
             buffer->isEmpty = true; // no data to read
-            buffer->isFull = true; // no place to write
-            // you should unblock the buffer before being able to use it again
+            buffer->isFull = false; // no place to write
         }
-        
     }
     return;
     
@@ -190,25 +189,27 @@ void markMsg(volatile Buffer *buffer){
     buffer->msgRanges[buffer->msgCount].end = (buffer->tail - 1) % buffer->arraySize;
     buffer->msgRanges[buffer->msgCount].restriction = 2;
     buffer->msgCount++;
+    removeMsgStart(buffer); // free the buffer
     return;
 }
 
 void unmarkMsg (volatile Buffer *buffer){
-    // Find the blocked range
     buffer->msgRanges[0].restriction = 1;
     buffer->Blocked = false;
     return;
 }
 
-void getMsg(volatile Buffer *buffer, uint8_t* msgOut){
+void getMsg(volatile Buffer *buffer, uint8_t* msgOut, uint8_t* msgSize){
     // gets the oldest message found in buffer
     if(buffer->msgCount == 0){
         return;
     }
     
-    uint8_t msgSize = buffer->msgRanges[0].end - buffer->msgRanges[0].start + 1;
+    uint8_t sz;
+    sz = buffer->msgRanges[0].end - buffer->msgRanges[0].start + 1;
+    *msgSize = sz;
     // copy to msgOut
-    memcpy(msgOut, (uint8_t *)buffer->array + buffer->msgRanges[0].start, msgSize);
+    memcpy(msgOut, (uint8_t *)buffer->array + buffer->msgRanges[0].start, sz);
     // remove the message from the buffer
     unmarkMsg(buffer);
     // shift the msgRanges to next one is in msgRanges[0]
