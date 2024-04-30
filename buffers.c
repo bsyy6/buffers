@@ -206,10 +206,22 @@ void getMsg(volatile Buffer *buffer, uint8_t* msgOut, uint8_t* msgSize){
     }
     
     uint8_t sz;
-    sz = buffer->msgRanges[0].end - buffer->msgRanges[0].start + 1;
-    *msgSize = sz;
-    // copy to msgOut
-    memcpy(msgOut, (uint8_t *)buffer->array + buffer->msgRanges[0].start, sz);
+    bool normalOrder = buffer->msgRanges[0].end >= buffer->msgRanges[0].start;
+    if (normalOrder) {
+        // Message doesn't wrap around the end of the buffer
+        sz = buffer->msgRanges[0].end - buffer->msgRanges[0].start + 1;
+        memcpy(msgOut, (uint8_t *)buffer->array + buffer->msgRanges[0].start, sz);
+    } else {
+        // Message wraps around the end of the buffer
+        uint8_t firstPartSize = buffer->arraySize - buffer->msgRanges[0].start;
+        sz = (buffer->arraySize - buffer->msgRanges[0].start) + (buffer->msgRanges[0].end + 1);
+        // copy the start of the message
+        memcpy(msgOut, (uint8_t *)buffer->array + buffer->msgRanges[0].start, firstPartSize);
+        // the rest of the message
+        memcpy(msgOut+firstPartSize, (uint8_t *)buffer->array ,  buffer->msgRanges[0].end+1);
+    }
+
+    *msgSize = sz;   
     // remove the message from the buffer
     unmarkMsg(buffer);
     // shift the msgRanges to next one is in msgRanges[0]
