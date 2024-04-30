@@ -32,7 +32,7 @@ void enq(void *data, volatile Buffer *buffer) {
                 }
                 else
                 {
-                    buffer->msgRanges[i].restriction = 0; // open for read/write
+                    buffer->msgRanges[i].restriction = 0; // open for reading
                 }
             }
         }
@@ -113,7 +113,7 @@ uint8_t howMuchData(volatile Buffer *buffer) {
 void setMsgStart(volatile Buffer *buffer){
     if(!buffer->Blocked){
         buffer->Blocked = true;
-        buffer->msgStartIdx = buffer->tail-1;
+        buffer->msgStartIdx = (buffer->tail-1)% buffer->arraySize;
     }
 }
 
@@ -187,7 +187,7 @@ void markMsg(volatile Buffer *buffer){
         return;
     }
     buffer->msgRanges[buffer->msgCount].start = buffer->msgStartIdx;
-    buffer->msgRanges[buffer->msgCount].end = buffer->tail;
+    buffer->msgRanges[buffer->msgCount].end = (buffer->tail - 1) % buffer->arraySize;
     buffer->msgRanges[buffer->msgCount].restriction = 2;
     buffer->msgCount++;
     return;
@@ -205,8 +205,15 @@ void getMsg(volatile Buffer *buffer, uint8_t* msgOut){
     if(buffer->msgCount == 0){
         return;
     }
+    
     uint8_t msgSize = buffer->msgRanges[0].end - buffer->msgRanges[0].start + 1;
+    // copy to msgOut
     memcpy(msgOut, (uint8_t *)buffer->array + buffer->msgRanges[0].start, msgSize);
+    // remove the message from the buffer
     unmarkMsg(buffer);
+    // shift the msgRanges to next one is in msgRanges[0]
+    for (uint8_t i = 1; i < 3 ; i++) {
+        buffer->msgRanges[i-1] = buffer->msgRanges[i];
+    }
     return;
 }
