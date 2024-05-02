@@ -126,7 +126,7 @@ void removeMsgStart(volatile Buffer *buffer){
 
 bool findNextMsgStart(volatile Buffer *buffer){
     if(buffer->Blocked){
-        return(findFlag(buffer, (uint8_t *)buffer->array + buffer->msgStartIdx +1));// +1 to skip the current start flag
+        return(findFlag(buffer, (uint8_t *)buffer->array + buffer->msgStartIdx));// +1 to skip the current start flag
     }else{
         return false;
     }
@@ -155,10 +155,8 @@ void jumpToMsgStart(volatile Buffer *buffer){
     
     if(buffer->Blocked){
         buffer->tail = buffer->msgStartIdx;
-        if(buffer->head == buffer->tail){
-            buffer->isEmpty = true; // no data to read
-            buffer->isFull = false; // no place to write
-        }
+        buffer->isEmpty = (buffer->head == buffer->tail); // no data to read
+        buffer->isFull = !(buffer->head == buffer->tail); // no place to write
     }
     return;
     
