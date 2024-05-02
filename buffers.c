@@ -113,7 +113,7 @@ uint8_t howMuchData(volatile Buffer *buffer) {
 void setMsgStart(volatile Buffer *buffer){
     if(!buffer->Blocked){
         buffer->Blocked = true;
-        buffer->msgStartIdx = (buffer->tail-1)% buffer->arraySize;
+        buffer->msgStartIdx = (buffer->tail+ buffer->arraySize)% (buffer->arraySize+1);
     }
 }
 
@@ -126,7 +126,7 @@ void removeMsgStart(volatile Buffer *buffer){
 
 bool findNextMsgStart(volatile Buffer *buffer){
     if(buffer->Blocked){
-        return(findFlag(buffer, (uint8_t *)buffer->array + buffer->msgStartIdx));
+        return(findFlag(buffer, (uint8_t *)buffer->array + buffer->msgStartIdx +1));// +1 to skip the current start flag
     }else{
         return false;
     }
@@ -154,7 +154,7 @@ bool findFlag(volatile Buffer *buffer, void *data){
 void jumpToMsgStart(volatile Buffer *buffer){
     
     if(buffer->Blocked){
-        buffer->tail = (buffer->msgStartIdx + 1) % buffer->arraySize;
+        buffer->tail = buffer->msgStartIdx;
         if(buffer->head == buffer->tail){
             buffer->isEmpty = true; // no data to read
             buffer->isFull = false; // no place to write
@@ -186,7 +186,7 @@ void markMsg(volatile Buffer *buffer){
         return;
     }
     buffer->msgRanges[buffer->msgCount].start = buffer->msgStartIdx;
-    buffer->msgRanges[buffer->msgCount].end = (buffer->tail - 1) % buffer->arraySize;
+    buffer->msgRanges[buffer->msgCount].end = (buffer->tail + buffer->arraySize) % (buffer->arraySize+1); // = msgEnd - 1 wrapped around the array
     buffer->msgRanges[buffer->msgCount].restriction = 2;
     buffer->msgCount++;
     removeMsgStart(buffer); // free the buffer
