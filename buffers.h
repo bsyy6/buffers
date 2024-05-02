@@ -27,7 +27,7 @@ typedef struct {
     bool Blocked; // Temporary tail.
     
     uint8_t msgStartIdx; // Temporary tail.
-    Range msgRanges[3]; 
+    Range msgRanges[4]; 
     uint8_t msgCount; 
 } Buffer;
 
