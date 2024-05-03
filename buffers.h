@@ -9,13 +9,6 @@
 #define BLOCK_WHEN_FULL 1
 
 typedef struct {
-    uint8_t start;
-    uint8_t end;
-    uint8_t restriction; // 0:no restriction, 1:write only, 2:blocked no read no write.
-} Range;
-
-
-typedef struct {
     // circular buffer
     uint8_t *array;         // pointer to the array that will be used as buffer
     uint8_t arraySize;   // how many elements in the array
@@ -27,8 +20,6 @@ typedef struct {
     bool Blocked; // Temporary tail.
     
     uint8_t msgStartIdx; // Temporary tail.
-    Range msgRanges[4]; 
-    uint8_t msgCount; 
 } Buffer;
 
 
@@ -50,7 +41,9 @@ bool findNextMsgStart(volatile Buffer *buffer);// find next message start
 void jumpToMsgStart(volatile Buffer *buffer);   // jump to message start
 
 bool findFlag(volatile Buffer *buffer, void *data); // find a flag in buffer
-void unmarkMsg(volatile Buffer *buffer); // unblocks from start to end
-void markMsg(volatile Buffer *buffer); // blocks from bookmark to current tail
-void getMsg(volatile Buffer *buffer, uint8_t* msgOut, uint8_t* msgSize); // gets the oldest message found in buffer
+uint8_t copyMsg(uint8_t* dest, volatile Buffer *buffer, uint8_t idxStart, uint8_t idxEnd, uint8_t arraySize);
+uint8_t getMsgSize(uint8_t idxStart, uint8_t idxEnd, uint8_t arraySize);
+
+void markMsg(volatile Buffer *buffer);
+void unmarkMsg(volatile Buffer *buffer);
 #endif

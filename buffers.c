@@ -25,17 +25,17 @@ void enq(void *data, volatile Buffer *buffer) {
     }else{
         
         // check that buffer head is not pointing to a blocked range
-        for (uint8_t i = 0; i <= buffer->msgCount; i++) {
-            if (buffer->head == buffer->msgRanges[i].start) {
-                if(buffer->msgRanges[i].restriction > 1){
-                    buffer->head = buffer->msgRanges[i].end + 1;
-                }
-                else
-                {   
-                    buffer->msgRanges[i].restriction = 0; // open for reading
-                }
-            }
-        }
+        // for (uint8_t i = 0; i <= buffer->msgCount; i++) {
+        //     if (buffer->head == buffer->msgRanges[i].start) {
+        //         if(buffer->msgRanges[i].restriction > 1){
+        //             buffer->head = buffer->msgRanges[i].end + 1;
+        //         }
+        //         else
+        //         {   
+        //             buffer->msgRanges[i].restriction = 0; // open for reading
+        //         }
+        //     }
+        // }
 
         memcpy((uint8_t *)buffer->array + buffer->head, data, 1);
         buffer->head = (buffer->head + 1) % buffer->arraySize;
@@ -54,11 +54,11 @@ void deq(void *data, volatile Buffer *buffer) {
     }
     
     // check that buffer tail is not pointing to a blocked range
-    for (uint8_t i = 0; i <= buffer->msgCount; i++) {
-        if (buffer->tail == buffer->msgRanges[i].start && buffer->msgRanges[i].restriction == 2) {
-            buffer->tail = buffer->msgRanges[i].end + 1;
-        }
-    }
+    // for (uint8_t i = 0; i <= buffer->msgCount; i++) {
+    //     if (buffer->tail == buffer->msgRanges[i].start && buffer->msgRanges[i].restriction == 2) {
+    //         buffer->tail = buffer->msgRanges[i].end + 1;
+    //     }
+    // }
 
     memcpy(data, (uint8_t *)buffer->array + buffer->tail, 1);
     buffer->tail = (buffer->tail + 1) % buffer->arraySize;
@@ -179,53 +179,11 @@ void rollback( volatile Buffer *buffer, uint8_t N){
 }
 
 void markMsg(volatile Buffer *buffer){
-    if(buffer->msgCount>=3){
-        buffer->dataLoss = true;
-        return;
-    }
-    buffer->msgRanges[buffer->msgCount+1].start = buffer->msgStartIdx;
-    buffer->msgRanges[buffer->msgCount+1].end = (buffer->tail + buffer->arraySize) % (buffer->arraySize+1); // = msgEnd - 1 wrapped around the array
-    buffer->msgRanges[buffer->msgCount+1].restriction = 2;
-    buffer->msgCount++;
     removeMsgStart(buffer); // free the buffer
     return;
 }
 
 void unmarkMsg (volatile Buffer *buffer){
-    buffer->msgRanges[1].restriction = 1;
     buffer->Blocked = false;
-    return;
-}
-
-void getMsg(volatile Buffer *buffer, uint8_t* msgOut, uint8_t* msgSize){
-    // gets the oldest message found in buffer
-    if(buffer->msgCount == 0){
-        return;
-    }
-    
-    uint8_t sz;
-    bool normalOrder = buffer->msgRanges[1].end >= buffer->msgRanges[1].start;
-    if (normalOrder) {
-        // Message doesn't wrap around the end of the buffer
-        sz = buffer->msgRanges[1].end - buffer->msgRanges[1].start + 1;
-        memcpy(msgOut, (uint8_t *)buffer->array + buffer->msgRanges[1].start, sz);
-    } else {
-        // Message wraps around the end of the buffer
-        uint8_t firstPartSize = buffer->arraySize - buffer->msgRanges[1].start;
-        sz = (buffer->arraySize - buffer->msgRanges[1].start) + (buffer->msgRanges[1].end + 1);
-        // copy the start of the message
-        memcpy(msgOut, (uint8_t *)buffer->array + buffer->msgRanges[1].start, firstPartSize);
-        // the rest of the message
-        memcpy(msgOut+firstPartSize, (uint8_t *)buffer->array ,  buffer->msgRanges[1].end+1);
-    }
-
-    *msgSize = sz;   
-    // remove the message from the buffer
-    unmarkMsg(buffer);
-    buffer->msgCount = buffer->msgCount - 1;
-    // shift the msgRanges to next one is in msgRanges[0]
-    for (uint8_t i = 1; i < 4 ; i++) {
-        buffer->msgRanges[i-1] = buffer->msgRanges[i];
-    }
     return;
 }
