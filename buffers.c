@@ -24,6 +24,9 @@ void enq(void *data, volatile Buffer *buffer) {
         return;
     }else{
         
+        if (buffer->head < buffer->tail) {
+            cleanUpBuffer(buffer); // pushes back the data to the start of the buffer.
+        }
         // check that buffer head is not pointing to a blocked range
         for (uint8_t i = 0; i <= buffer->msgCount; i++) {
             if (buffer->head == buffer->msgRanges[i].start) {
@@ -227,5 +230,24 @@ void getMsg(volatile Buffer *buffer, uint8_t* msgOut, uint8_t* msgSize){
     for (uint8_t i = 1; i < 4 ; i++) {
         buffer->msgRanges[i-1] = buffer->msgRanges[i];
     }
+    return;
+}
+
+void shiftBuffer(volatile Buffer *buffer, uint8_t shiftStartPosition, uint8_t nBytes){
+    // shifts the nBytes from the shiftStartPosition to the beginning of the buffer
+    
+    if(buffer->isEmpty || nBytes == 0){
+        return;
+    }
+    
+    memcpy((uint8_t *)buffer->array, (uint8_t *)buffer->array + shiftStartPosition, nBytes);
+    buffer->head = nBytes;
+    buffer->tail = 0;
+    // shift the message ranges too
+    for(uint8_t i = 0; i <= buffer->msgCount; i++){
+        buffer->msgRanges[i].start = (buffer->msgRanges[i].start - shiftStartPosition + buffer->arraySize) % buffer->arraySize;
+        buffer->msgRanges[i].end = (buffer->msgRanges[i].end - shiftStartPosition + buffer->arraySize) % buffer->arraySize;
+    }
+   
     return;
 }
