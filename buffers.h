@@ -48,9 +48,10 @@ void setMsgStart(volatile Buffer *buffer);  // mark message start
 void removeMsgStart(volatile Buffer *buffer); // remove message start mark
 bool findNextMsgStart(volatile Buffer *buffer);// find next message start
 void jumpToMsgStart(volatile Buffer *buffer);   // jump to message start
+void delRange(volatile Buffer *buffer, uint8_t delStart, uint8_t delEnd, bool safe);
 
 bool findFlag(volatile Buffer *buffer, void *data); // find a flag in buffer
-void unmarkMsg(volatile Buffer *buffer); // unblocks from start to end
-void markMsg(volatile Buffer *buffer); // blocks from bookmark to current tail
+void deqMsg(volatile Buffer *buffer); // unblocks from start to end
+void enqMsg(volatile Buffer *buffer); // blocks from bookmark to current tail
 void getMsg(volatile Buffer *buffer, uint8_t* msgOut, uint8_t* msgSize); // gets the oldest message found in buffer
 #endif
