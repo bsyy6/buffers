@@ -6,7 +6,14 @@
 #ifndef BUFFERS_H
 #define BUFFERS_H
 
-#define BLOCK_WHEN_FULL 1
+#define BLOCK_WHEN_FULL 0
+
+typedef struct {
+    uint8_t start;
+    uint8_t end;
+    uint8_t restriction; // 0:no restriction, 1:write only, 2:blocked no read no write.
+} Range;
+
 
 typedef struct {
     // circular buffer
@@ -20,6 +27,8 @@ typedef struct {
     bool Blocked; // Temporary tail.
     
     uint8_t msgStartIdx; // Temporary tail.
+    Range msgRanges[4]; 
+    uint8_t msgCount; 
 } Buffer;
 
 
@@ -28,6 +37,8 @@ Buffer initBuffer(void *array, uint8_t arraySize);
 // basic buffer operations
 void enq(void *data, volatile Buffer *buffer); // add data
 void deq(void *data, volatile Buffer *buffer); // read data
+void getMsg(volatile Buffer *buffer, uint8_t* msgOut, uint8_t* msgSize); // gets the oldest message found in buffer
+
 void nEnq(void *data, volatile Buffer *buffer, uint8_t size); // add n data
 void nDeq(void *data, volatile Buffer *buffer, uint8_t size); // read n data
 void reset(volatile Buffer *buffer); // reset buffer
@@ -39,11 +50,9 @@ void setMsgStart(volatile Buffer *buffer);  // mark message start
 void removeMsgStart(volatile Buffer *buffer); // remove message start mark
 bool findNextMsgStart(volatile Buffer *buffer);// find next message start
 void jumpToMsgStart(volatile Buffer *buffer);   // jump to message start
+void delRange(volatile Buffer *buffer, uint8_t delStart, uint8_t delEnd, bool safe);
 
 bool findFlag(volatile Buffer *buffer, void *data); // find a flag in buffer
-uint8_t copyMsg(uint8_t* dest, volatile Buffer *buffer, uint8_t idxStart, uint8_t idxEnd, uint8_t arraySize);
-uint8_t getMsgSize(uint8_t idxStart, uint8_t idxEnd, uint8_t arraySize);
-
-void markMsg(volatile Buffer *buffer);
-void unmarkMsg(volatile Buffer *buffer);
+void deqMsg(volatile Buffer *buffer); // unblocks from start to end
+void enqMsg(volatile Buffer *buffer); // blocks from bookmark to current tail
 #endif
