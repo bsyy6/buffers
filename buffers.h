@@ -18,7 +18,9 @@ typedef struct {
 typedef struct {
     // circular buffer
     uint8_t *array;         // pointer to the array that will be used as buffer
-    uint8_t arraySize;   // how many elements in the array
+    uint8_t arraySize;      // how many elements in the array
+    uint8_t *initialArray;
+    uint8_t initialArraySize;
     uint8_t head;  // write index
     uint8_t tail;  // read  index
     bool isEmpty;  // there is nothing inside
@@ -55,4 +57,11 @@ void delRange(volatile Buffer *buffer, uint8_t delStart, uint8_t delEnd, bool sa
 bool findFlag(volatile Buffer *buffer, void *data); // find a flag in buffer
 void deqMsg(volatile Buffer *buffer); // unblocks from start to end
 void enqMsg(volatile Buffer *buffer); // blocks from bookmark to current tail
+
+void reverse(uint8_t *arr, uint8_t start, uint8_t end);
+void shiftRight(uint8_t *arr, uint8_t n, uint8_t size);
+void shiftLeft(uint8_t *arr, uint8_t n, uint8_t size);
+void shiftMsgLeft(volatile Buffer *buffer);
+void shiftBuffer(volatile Buffer *buffer, uint8_t n );
+
 #endif
