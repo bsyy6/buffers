@@ -64,4 +64,5 @@ void shiftLeft(uint8_t *arr, uint8_t n, uint8_t size);
 void shiftMsgLeft(volatile Buffer *buffer);
 void shiftBuffer(volatile Buffer *buffer, uint8_t n );
 
+void updateBufferStart(volatile Buffer *buffer);
 #endif
