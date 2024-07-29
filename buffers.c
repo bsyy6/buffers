@@ -46,13 +46,6 @@ void deq(void *data, volatile Buffer *buffer) {
 
     memcpy(data, (uint8_t *)buffer->array + buffer->tail, 1);
     buffer->tail = (buffer->tail + 1) % buffer->arraySize;
-    // check that buffer tail is not pointing to a blocked range
-    if(buffer->msgCount > 0){
-        if(buffer->tail <= buffer->msgRanges[buffer->msgCount-1].end){
-            buffer->tail = buffer->msgRanges[buffer->msgCount-1].end + 1;
-        }
-    }
-
     buffer->isFull = false;
     buffer->isEmpty = buffer->head == buffer->tail;
     return;
@@ -183,13 +176,24 @@ void enqMsg(volatile Buffer *buffer){
         uint8_t end =  (buffer->tail == 0) ? (buffer->arraySize - 1) : (buffer->tail - 1);
         uint8_t start = buffer->msgStartIdx;
         uint8_t msgLength = (end >= start) ? end - start + 1 : buffer->arraySize - start + end + 1;
-
-        buffer->msgRanges[buffer->msgCount].start = start;
-        buffer->msgRanges[buffer->msgCount].end = end; // = msgEnd - 1 wrapped around the array
-        buffer->msgCount++;
-        shiftMsgLeft(buffer);
-        updateBufferStart(buffer);
+        
+        shiftMsgLeft(buffer, start);
+        // update msg ranges
+        if(buffer->msgCount == 0){
+            buffer->msgRanges[0].start = 0;
+            buffer->msgRanges[0].end = msgLength - 1;
+            buffer->msgCount++;
+        }else{
+            buffer->msgRanges[buffer->msgCount].start = buffer->msgRanges[buffer->msgCount-1].end + 1; // = msgStartIdx + 1 wrapped around the array
+            buffer->msgRanges[buffer->msgCount].end = buffer->msgRanges[buffer->msgCount].start + msgLength - 1 ; // = msgEnd - 1 wrapped around the array
+            buffer->msgCount++;
+        }
+        // update  where buffer starts
         removeMsgStart(buffer); // free the buffer
+
+        updateBufferStart(buffer);
+
+        
     }
     return;
 
@@ -200,17 +204,22 @@ void deqMsg (volatile Buffer *buffer){
     if(buffer->msgCount == 0){
         return;
     }
-    if(buffer->msgCount >1 ){
-        buffer->array = buffer->initialArray + buffer->msgRanges[0].end + 1;
-    }else{
-        buffer->array = buffer->initialArray;
-    }
+    uint8_t lsh = buffer->msgRanges[0].end - buffer->msgRanges[0].start + 1;
+    
+    
+    buffer->array = buffer->initialArray + buffer->msgRanges[0].end + 1;
+    buffer->arraySize = buffer->initialArraySize - buffer->msgRanges[0].end - 1;
+    
+    
+    memcpy(buffer->initialArray, buffer->array,buffer->arraySize);
     buffer->msgCount = buffer->msgCount - 1;
-    // buffer->Blocked = false;
-    // shift the msgRanges to next one is in msgRanges[1]
+    
     for (uint8_t i = 1; i <= buffer->msgCount ; i++) {
-        buffer->msgRanges[i-1] = buffer->msgRanges[i];
+        buffer->msgRanges[i-1].start = buffer->msgRanges[i].start - lsh;
+        buffer->msgRanges[i-1].end = buffer->msgRanges[i].end - lsh;
     }
+    buffer->msgRanges[buffer->msgCount].start = 0;
+    buffer->msgRanges[buffer->msgCount].end = 0;   
     return;
 }
 
@@ -225,7 +234,7 @@ void getMsg(volatile Buffer *buffer, uint8_t* msgOut, uint8_t* msgSize){
     if (normalOrder) {
         // Message doesn't wrap around the end of the buffer
         sz = buffer->msgRanges[0].end - buffer->msgRanges[0].start + 1;
-        memcpy(msgOut, (uint8_t *)buffer->array + buffer->msgRanges[0].start, sz);   
+        memcpy(msgOut, (uint8_t *)buffer->initialArray + buffer->msgRanges[0].start, sz);   
     }
     *msgSize = sz;   
     // remove the message from the buffer
@@ -256,45 +265,15 @@ void shiftBuffer(volatile Buffer *buffer, uint8_t n ){
 }
 
 /*  takes current message and lsh 
-    so it is either in the start of buffer 
-    or after the last message.
+    so it is in the start of buffer
 */
-void shiftMsgLeft(volatile Buffer *buffer){
-   
-    if(buffer->msgCount == 0){
+void shiftMsgLeft(volatile Buffer *buffer, uint8_t lsh){
+    if(lsh== 0){
         return;
     }
-    
-    uint8_t n = 0;
-    uint8_t ArrayStart = 0;
-    uint8_t jumpBlockedRange = 0;
-
-
-    if(buffer->msgCount == 1){
-         // if there is only one message
-       n = buffer->msgRanges[buffer->msgCount-1].start;
-
-    }
-    else{
-        n = buffer->msgRanges[buffer->msgCount-1].start - buffer->msgRanges[buffer->msgCount-2].end -1 ;
-        ArrayStart = buffer->msgRanges[buffer->msgCount-2].end+1;
-        jumpBlockedRange = buffer->msgRanges[buffer->msgCount-1].end - n + 1;
-    }
-    
-
-    for(uint8_t i = 0; i < buffer->msgCount; i++){
-        buffer->msgRanges[i].start = (buffer->msgRanges[i].start + buffer->arraySize - n) % buffer->arraySize;
-        buffer->msgRanges[i].end = (buffer->msgRanges[i].end + buffer->arraySize - n) % buffer->arraySize;
-    }
-
-    shiftLeft(buffer->array+ArrayStart, n, buffer->arraySize - ArrayStart);
-   
-    buffer->head = ((buffer->head  + buffer->arraySize - n) % buffer->arraySize ) + jumpBlockedRange;// + buffer->msgRanges[buffer->msgCount-1].end+1;
-    buffer->tail = ((buffer->tail  + buffer->arraySize - n) % buffer->arraySize ) + jumpBlockedRange;// + buffer->msgRanges[buffer->msgCount-1].end+1;
-
-    if(buffer->Blocked){
-        buffer->msgStartIdx = (buffer->msgStartIdx + buffer->arraySize - n) % buffer->arraySize;
-    }
+    shiftLeft(buffer->array, lsh, buffer->arraySize);
+    buffer->head = ((buffer->head  + buffer->arraySize - lsh) % buffer->arraySize );
+    buffer->tail = ((buffer->tail  + buffer->arraySize - lsh) % buffer->arraySize );
     return;
 }
 
@@ -333,12 +312,16 @@ void updateBufferStart(volatile Buffer *buffer){
         buffer->array = buffer->initialArray;
         buffer->arraySize = buffer->initialArraySize;   
     }else{
-        buffer->array = buffer->initialArray + buffer->msgRanges[buffer->msgCount-1].end + 1;
-        buffer->arraySize = buffer->initialArraySize - buffer->msgRanges[buffer->msgCount-1].end - 1;
-        buffer->head = buffer->head - buffer->msgRanges[buffer->msgCount-1].end - 1;
-        buffer->tail = buffer->tail - buffer->msgRanges[buffer->msgCount-1].end - 1;
+        uint8_t newStart = buffer->msgRanges[buffer->msgCount-1].end + 1;
+        uint8_t msgLength = buffer->msgRanges[buffer->msgCount-1].end - buffer->msgRanges[buffer->msgCount-1].start + 1;
+        
+        buffer->array = buffer->initialArray + newStart;
+        buffer->arraySize = buffer->initialArraySize - newStart;
+        
+        buffer->head = buffer->head - msgLength;
+        buffer->tail = buffer->tail - msgLength;
         if(buffer->Blocked){
-            buffer->msgStartIdx = buffer->msgStartIdx - buffer->msgRanges[buffer->msgCount-1].end - 1;
+            buffer->msgStartIdx = buffer->msgStartIdx - msgLength;
         }
     }
     return;

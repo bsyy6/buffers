@@ -61,7 +61,7 @@ void enqMsg(volatile Buffer *buffer); // blocks from bookmark to current tail
 void reverse(uint8_t *arr, uint8_t start, uint8_t end);
 void shiftRight(uint8_t *arr, uint8_t n, uint8_t size);
 void shiftLeft(uint8_t *arr, uint8_t n, uint8_t size);
-void shiftMsgLeft(volatile Buffer *buffer);
+void shiftMsgLeft(volatile Buffer *buffer, uint8_t lsh);
 void shiftBuffer(volatile Buffer *buffer, uint8_t n );
 
 void updateBufferStart(volatile Buffer *buffer);

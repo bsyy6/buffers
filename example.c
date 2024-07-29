@@ -4,7 +4,8 @@
 Buffer b; // buffer object
 uint8_t data[5];  // array I want to use as buffer
 
-uint8_t msgOut[5];  
+uint8_t msgOut[5]; 
+uint8_t msgSize;
 
 // single data example
 uint8_t dataIn;   // holder for bytes I want to save in buffer
@@ -48,10 +49,18 @@ int main(){
 	deq(&dataOut,&b); // read wrong data
 	deq(&dataOut,&b); // read 2
 	dataIn = 4;
-	enq(&dataIn,&b);  // add 3
+	enq(&dataIn,&b);  // add 4
+	getMsg(&b,msgOut,&msgSize); // get the first element
+	dataIn = 5;
+	enq(&dataIn,&b);  // add 5
+	enq(&dataIn,&b);  // add 5
+	deq(&dataOut,&b); // read 5
 	setMsgStart(&b);  // set bookmark
 	deq(&dataOut,&b); // read 2
 	enqMsg(&b); // block the message
+	getMsg(&b,msgOut,&msgSize); // get the first element
+	getMsg(&b,msgOut,&msgSize); // get the first element
+
 	deq(&dataOut,&b); // read ?
 	dataIn = 99;
 	enq(&dataIn,&b);  // add 2
