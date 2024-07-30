@@ -23,9 +23,7 @@ void enq(void *data, volatile Buffer *buffer) {
     if(BLOCK_WHEN_FULL &&  buffer->dataLoss){
         // doesn't add anymore
         return;
-    }else{
-        
-        
+    }else{  
         memcpy((uint8_t *)buffer->array + buffer->head, data, 1);
         buffer->head = (buffer->head + 1) % buffer->arraySize;
         buffer->isEmpty = false;
@@ -205,21 +203,38 @@ void deqMsg (volatile Buffer *buffer){
         return;
     }
     uint8_t lsh = buffer->msgRanges[0].end - buffer->msgRanges[0].start + 1;
-    
-    
-    buffer->array = buffer->initialArray + buffer->msgRanges[0].end + 1;
-    buffer->arraySize = buffer->initialArraySize - buffer->msgRanges[0].end - 1;
-    
-    
-    memcpy(buffer->initialArray, buffer->array,buffer->arraySize);
-    buffer->msgCount = buffer->msgCount - 1;
-    
-    for (uint8_t i = 1; i <= buffer->msgCount ; i++) {
+
+    if(buffer->msgCount == 1){
+        memcpy(buffer->initialArray, buffer->array,buffer->arraySize);
+        buffer->msgRanges[0].start = 0;
+        buffer->msgRanges[0].end = 0;
+        buffer->array = buffer->initialArray;
+        buffer->arraySize = buffer->initialArraySize;
+        
+        if(buffer->isFull){
+            buffer->head = buffer->head+1;
+        }
+        // I just released some free space, it can't be full
+        buffer->isFull = false;
+    }else{
+        for (uint8_t i = 1; i < buffer->msgCount ; i++) {
         buffer->msgRanges[i-1].start = buffer->msgRanges[i].start - lsh;
         buffer->msgRanges[i-1].end = buffer->msgRanges[i].end - lsh;
+        }
+        buffer->msgRanges[buffer->msgCount].start = 0;
+        buffer->msgRanges[buffer->msgCount].end = 0;   
+        buffer->array = buffer->initialArray + buffer->msgRanges[0].end + 1;
+        buffer->arraySize = buffer->initialArraySize - buffer->msgRanges[0].end - 1;
+        memcpy(buffer->initialArray, buffer->array,buffer->arraySize);
+        // I just released some free space, it can't be full
+        if(buffer->isFull){
+            buffer->head = buffer->head+1;
+        }
+        buffer->isFull = false;
     }
-    buffer->msgRanges[buffer->msgCount].start = 0;
-    buffer->msgRanges[buffer->msgCount].end = 0;   
+    
+    
+    buffer->msgCount = buffer->msgCount - 1;
     return;
 }
 
@@ -318,8 +333,8 @@ void updateBufferStart(volatile Buffer *buffer){
         buffer->array = buffer->initialArray + newStart;
         buffer->arraySize = buffer->initialArraySize - newStart;
         
-        buffer->head = buffer->head - msgLength;
-        buffer->tail = buffer->tail - msgLength;
+        buffer->head =  buffer->head <= msgLength ?  0 : buffer->head - msgLength;
+        buffer->tail =  buffer->tail <= msgLength ?  0 : buffer->tail - msgLength;
         if(buffer->Blocked){
             buffer->msgStartIdx = buffer->msgStartIdx - msgLength;
         }

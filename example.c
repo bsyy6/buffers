@@ -27,12 +27,12 @@ int main(){
 	printf("dataOut: %d\tdataIn: %d\n",dataOut,dataIn);
 
 	dataIn = 1;
-	enq(&dataIn,&b);  // add 2
-	deq(&dataOut,&b); // read from buffer and store it in data out
+	enq(&dataIn,&b);  // add 1
+	deq(&dataOut,&b); // read 1
 	setMsgStart(&b);  // set bookmark
-	enq(&dataIn,&b);  // add 3
-	deq(&dataOut,&b); // read from buffer and store it in data out
-	enqMsg(&b); // block the message
+	enq(&dataIn,&b);  // add 1
+	deq(&dataOut,&b); // read 1
+	enqMsg(&b); // block the message [ 1 1 ]
 
 	dataIn=9; //wrong data
 	enq(&dataIn,&b);  // add 9
@@ -43,7 +43,10 @@ int main(){
 	setMsgStart(&b);  // set bookmark
 	enq(&dataIn,&b);  // add 2
 	deq(&dataOut,&b); // read 2
-	enqMsg(&b); // block the message	
+	dataIn = 3;
+	enq(&dataIn,&b);  // add 3
+	enqMsg(&b); // block the message [ 2 2 ]	
+	deq(&dataOut,&b); // read 3
 	dataIn = 3;
 	enq(&dataIn,&b);  // add 3
 	deq(&dataOut,&b); // read wrong data
